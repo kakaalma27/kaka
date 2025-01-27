@@ -179,63 +179,35 @@ async function claimEDEAI(shortAddress, signer, walletAddress) {
     }
     return false;
 }
-
+function generateRandomText(length) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
+}
 function generateTokenName() {
-    const date = new Date();
-    const seed = parseInt(date.getTime() / 86400000); // Convert to days since epoch
-
-    function generateSyllable(num) {
-        const consonants = 'BCDFGHJKLMNPQRSTVWXZ';
-        const vowels = 'AEIOU';
-
-        const c1 = consonants[num % consonants.length];
-        const v = vowels[Math.floor(num / consonants.length) % vowels.length];
-        const c2 = consonants[Math.floor(num / (consonants.length * vowels.length)) % consonants.length];
-
-        return `${c1}${v}${c2}`;
-    }
-
-    const part1 = generateSyllable(seed);
-    const part2 = generateSyllable(seed * date.getHours() + date.getMinutes());
-
-    let name;
-    if (date.getHours() < 8) {
-        name = `${part1}${part2}`;
-    } else if (date.getHours() < 16) {
-        name = `${part1}-${part2}`;
-    } else {
-        name = `${part1}X${part2}`;
-    }
-
-    return name;
+    const maxLength = 10;
+    let tokenName;
+    do {
+        tokenName = generateRandomText(maxLength);
+    } while (tokenName.length > maxLength);
+    return tokenName;
+}
+function generateTokenSymbol(name) {
+    const cleanName = name.replace(/[aeiou]/gi, '');
+    return '$' + cleanName.slice(0, 4).toUpperCase();
 }
 
-function generateTokenSymbol(tokenName) {
-    const date = new Date();
-    const minuteInDay = date.getHours() * 60 + date.getMinutes();
-    const patternType = minuteInDay % 3;
-
-    switch (patternType) {
-        case 0:
-            return '$' + tokenName.split(/[-X]/)
-                .map(part => part[0])
-                .join('') + (date.getDate() % 10);
-        case 1:
-            return '$' + tokenName.replace(/[AEIOU-X]/g, '')
-                .slice(0, 3) + (date.getMinutes() % 10);
-        case 2:
-            return '$' + tokenName.replace(/[-X]/g, '')
-                .split('')
-                .filter((_, i) => i % 2 === 0)
-                .join('')
-                .slice(0, 3) + (date.getHours() % 10);
-    }
-}
+// Contoh penggunaan
+const tokenName = generateTokenName();
+console.log(`Generated Token Name: ${tokenName}`);
+console.log(`Generated Token Symbol: ${generateTokenSymbol(tokenName)}`);
 
 async function deployToken(shortAddr, signer, walletAddress) {
     const tokenName = generateTokenName();
     const tokenSymbol = generateTokenSymbol(tokenName);
-    console.log(`[${shortAddr}] Deploying token: ${tokenName} (${tokenSymbol})`);
     const supply = Math.floor(Math.random() * (10000000 - 1000000) + 1000000);
 
     const deployerContract = new ethers.Contract(config.contracts.erc20Deployer, DEPLOYER_ABI, signer);
@@ -268,7 +240,6 @@ async function deployToken(shortAddr, signer, walletAddress) {
     }
     return false;
 }
-
 async function encryptedTransfer(provider, signer, walletAddress) {
     const tokenContract = new ethers.Contract(config.contracts.eDEAI, EDEAI_ABI, signer);
 
@@ -370,7 +341,7 @@ async function botInstance(account) {
                     console.log(`[${shortAddr}] ✓ DEAI claimed`);
                 }
             }
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            await new Promise(resolve => setTimeout(resolve, 1000));
         
             if (stats.availability.edeai) {
                 process.stdout.write(`[${shortAddr}] Claiming eDEAI...`);
@@ -379,7 +350,7 @@ async function botInstance(account) {
                     console.log(`[${shortAddr}] ✓ eDEAI claimed`);
                 }
             }
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            await new Promise(resolve => setTimeout(resolve, 1000));
         
             if (stats.availability.deploy) {
                 process.stdout.write(`[${shortAddr}] Deploying token...`);
@@ -406,7 +377,7 @@ async function botInstance(account) {
                         process.stdout.write('\r\x1b[K');
                         console.log(`[${shortAddr}] ✓ Transfer ${currentTransfers + 1}/10 complete`);
                     }
-                    await new Promise(resolve => setTimeout(resolve, 5000));
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
             }
         
